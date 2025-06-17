@@ -1,0 +1,21 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "laravel-vite-plugin": "^0.8.0",
+        "vite": "^4.0.0"
+    },
+    "dependencies": {
+        "@vitejs/plugin-vue": "^4.4.1",
+        "pinia": "^2.1.7",
+        "axios": "^1.1.2",
+        "vee-validate": "^4.12.2",
+        "vue": "^3.2.36",
+        "vue-router": "^4.2.5",
+        "yup": "^1.3.2"
+    }
+}
