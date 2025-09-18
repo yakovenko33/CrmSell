@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  crm-sell-php-fpm:
+    build:
+      context: .
+      dockerfile: docker/php-fpm/Dockerfile
+    container_name: crm_sell_app
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini
+      - ./docker/php-fpm/opcache.ini:/usr/local/etc/php/conf.d/opcache.ini
+      - ./docker/php-fpm/www.conf:/usr/local/etc/php-fpm.d/www.conf
+    networks:
+      - crm-sell-network
+    environment:
+      - APP_ENV=production
+    depends_on:
+      - crm-sell-redis
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  crm-sell-queue:
+    build:
+      context: .
+      dockerfile: docker/queue/Dockerfile
+    container_name: crm_sell_queue_worker
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+      - ./docker/queue/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      - CONTAINER_ROLE=queue
+    #command: php artisan queue:work --verbose --tries=3 --timeout=90 --sleep=3 --max-jobs=100
+    depends_on:
+      - crm-sell-redis
+    networks:
+      - crm-sell-network
+
+  crm-sell-scheduler:
+    build:
+      context: .
+      dockerfile: docker/scheduler/Dockerfile
+    container_name: crm_sell_scheduler
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+      - ./docker/scheduler/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      - CONTAINER_ROLE=scheduler
+    depends_on:
+      - crm-sell-redis
+    networks:
+      - crm-sell-network
+
+  crm-sell-redis:
+    image: redis:7-alpine
+    container_name: crm_sell_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - crm-sell-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  crm-sell-network:
+    driver: bridge
